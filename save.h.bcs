@@ -1,0 +1,21 @@
+#ifndef SAVE_H_BCS
+#define SAVE_H_BCS
+
+#define StatsCounts 3
+#define WeaponsCounts 54
+#define AmmoCounts 24
+#define ItemsCounts 23
+#define MaxPlayers 64
+
+#linklibrary "savelib"
+
+extern int NotTriggerSaving[MaxPlayers];
+extern bool LoadedData[MaxPlayers];
+extern str AccountName[MaxPlayers];
+extern void WipeData (int PN);
+extern void LoadData (int PN);
+extern void SaveVariable (int PN);
+extern void SaveDataDisconnect (int PN);
+extern void SaveDataUnloading (int PN);
+
+#endif

@@ -1,0 +1,40 @@
+Actor Backpack1 : BackpackItem
+{
+	Height 26
+	States
+	{
+	Spawn:
+		BPAK A -1
+		Stop
+	}
+}
+
+Actor HasBackpack : Inventory
+{
+	Inventory.MaxAmount 1
+	+INVENTORY.UNDROPPABLE
+}
+
+Actor Backpack : CustomInventory
+{
+	Inventory.PickupMessage "$GOTBACKPACK" // "Picked up a backpack full of ammo!"
+	-INVENTORY.INVBAR
+	+INVENTORY.ALWAYSPICKUP
+	+INVENTORY.AUTOACTIVATE
+	States
+	{
+	Spawn:
+		BPAK A -1
+		Stop
+	Pickup:
+		TNT1 A 0 A_GiveInventory("Backpack1", 1)
+		TNT1 A 0 A_GiveInventory("HasBackpack", 1)
+		Stop
+	}
+}
+
+Actor LoadedData : Inventory
+{
+	Inventory.MaxAmount 1
+	+INVENTORY.UNDROPPABLE
+}

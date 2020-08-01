@@ -1,0 +1,372 @@
+#library "savelib"
+#include "zcommon.h"
+#include "save.h"
+
+int NotTriggerSaving[MaxPlayers];
+int StatsInit[StatsCounts] = {0,0,0};
+int WeaponsInit[WeaponsCounts] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int AmmoInit[AmmoCounts] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int ItemsInit[ItemsCounts] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+bool LoadedData[MaxPlayers];
+int StatsArmorAmount[MaxPlayers];
+int StatsAmount[MaxPlayers][StatsCounts];
+int ItemsAmount[MaxPlayers][ItemsCounts];
+int AmmoAmount[MaxPlayers][AmmoCounts];
+int WeaponsAmount[MaxPlayers][WeaponsCounts];
+str StatsArmorType[MaxPlayers];
+str AccountName[MaxPlayers];
+str SaveStats[StatsCounts] = {
+	"Health",
+	"Armor",
+	"Money",
+};
+str SaveItems[ItemsCounts] = {
+	"Junk Stone",
+	"Iron Ore",
+	"Silver Ore",
+	"Gold Ore",
+	"Amethyst",
+	"Diamond",
+	"StarmanInventory",
+	"EmptyPokeball",
+	"CyberDemonPokeball",
+	"KoopaShell",
+	"MushroomInventory",
+	"FireFlowerInventory",
+	"Radio",
+	"Bobomb",
+	"GiftCard",
+	"HitlerPokeball",
+	"CerberusPokeball",
+	"BattleLordPokeball",
+	"ED209Pokeball",
+	"SpiderDemonPokeball",
+	"SappyMeal",
+	"CocaCola",
+	"Pepsi",
+};
+str SaveAmmo[AmmoCounts] = {
+	"Flares",
+	"Saws",
+	"NukeAmmo",
+	"BoltAmmo",
+	"GasolineAmmo",
+	"BaseBallAmmo",
+	"Cell",
+	"Clip",
+	"RocketAmmo",
+	"Shell",
+	"HasBackpack",
+	"RedSpray",
+	"GreenSpray",
+	"BlueSpray",
+	"OrangeSpray",
+	"YellowSpray",
+	"PurpleSpray",
+	"PinkSpray",
+	"CyanSpray",
+	"BrownSpray",
+	"BlackSpray",
+	"DarkGraySpray",
+	"GraySpray",
+	"WhiteSpray"
+};
+str SaveWeapons[WeaponsCounts] = {
+	"Zapper",
+	"Punch",
+	"UACChainsaw",
+	"Baseball Bat",
+	"Master Sword",
+	"Katana",
+	"Hokuto Shinken",
+	"Givesnow20dollars",
+	"themurderweapon",
+	"Flashlight",
+	"Pick Axe",
+	"Phaser",
+	"Gas Can"
+	"Gas Can (No Kill)",
+	"FlareGun",
+	"HandGun",
+	"Golden Eagle",
+	"ShopShotgun",
+	"SPAS-12",
+	"SuperDuperShotgun",
+	"CrossbowWeapon",
+	"D64Chaingun",
+	"FrostFang",
+	"Uzi",
+	"UAC-M360",
+	"AK47",
+	"Minigun",
+	"GrenadeLauncher",
+	"TeamRocketLauncher",
+	"DevastatorWeapon",
+	"Railgun",
+	"Nuclear Railgun",
+	"Flamer",
+	"BlasterRifle",
+	"SawThrower",
+	"Plasmarifle2",
+	"Lightning Gun",
+	"BFG9000",
+	"BFG10k",
+	"Kamehameha",
+	"NukeLauncher",
+	"Red Spray Paint",
+	"Green Spray Paint",
+	"Blue Spray Paint",
+	"Orange Spray Paint",
+	"Yellow Spray Paint",
+	"Purple Spray Paint",
+	"Pink Spray Paint",
+	"Cyan Spray Paint",
+	"Brown Spray Paint",
+	"Black Spray Paint",
+	"Dark Gray Spray Paint",
+	"Gray Spray Paint",
+	"White Spray Paint"
+};
+
+int GetArmorStringToInt (int PN)
+{
+	str SaveDataAT = strparam(s:AccountName[PN], s:"_Armor");
+	str ArmorType = GetDBEntryString(SaveDataAT, "Type");
+	if(ArmorType == "ArmorBonus")
+		return 1;
+	else if(ArmorType == "GreenArmor")
+		return 2;
+	else if(ArmorType == "GreenArmor1")
+		return 2;
+	else if(ArmorType == "BlueArmor")
+		return 3;
+	else if(ArmorType == "BlueArmor1")
+		return 3;
+	else 
+		return 0;
+}
+
+void WipeData (int PN)
+{
+	str HasData = strparam(s:AccountName[PN], s:"_HasData");
+	NotTriggerSaving[PN] = true;
+	
+	SetDBEntry(HasData, "DoomCentor", 0); //It's faster than wiping all the data.
+	Log(s:"Wiped player_", d:PN, s:"'s data");
+	KickFromGame(PN, "Wiped Data");
+}
+
+void LoadData (int PN)
+{
+	str HasData = strparam(s:AccountName[PN], s:"_HasData");
+	str SaveDataS = strparam(s:AccountName[PN], s:"_Stats");
+	str SaveDataAT = strparam(s:AccountName[PN], s:"_Armor");
+	str SaveDataA = strparam(s:AccountName[PN], s:"_Ammo");
+	str SaveDataI = strparam(s:AccountName[PN], s:"_Items");
+	str SaveDataW = strparam(s:AccountName[PN], s:"_Weapons");
+	if(GetDBEntry(HasData, "DoomCentor")) {
+		foreach(let str x;SaveStats) {
+			if(x == "Health") {
+				if(GetDBEntry(SaveDataS, x) > 0)
+					SetActorProperty(0, APROP_Health, GetDBEntry(SaveDataS, x));
+			}
+			else if(x == "Armor") {
+				TakeInventory("Armor", 0x7FFFFFFF);
+				switch(GetArmorStringToInt(PN)) {
+					case 1:
+						GiveInventory("ArmorBonus", GetDBEntry(SaveDataAT, "Amount"));
+						break;
+					case 2:
+						GiveInventory("GreenArmor", 1);
+						TakeInventory("Armor", 99);
+						GiveInventory("Armor", GetDBEntry(SaveDataAT, "Amount"));
+						break;
+					case 3:
+						GiveInventory("BlueArmor", 1);
+						TakeInventory("Armor", 199);
+						GiveInventory("Armor", GetDBEntry(SaveDataAT, "Amount"));
+						break;
+					default:
+						break;
+				}
+			}
+			else {
+				TakeInventory(x, 0x7FFFFFFF);
+				GiveInventory(x, GetDBEntry(SaveDataS, x));
+			}
+		}
+		foreach(let str x;SaveItems) {
+			TakeInventory(x, 0x7FFFFFFF);
+			GiveInventory(x, GetDBEntry(SaveDataI, x));
+		}
+		foreach(let str x;SaveWeapons) {
+			TakeInventory(x, 0x7FFFFFFF);
+			GiveInventory(x, GetDBEntry(SaveDataW, x));
+		}
+		foreach(let str x;SaveAmmo) {
+			TakeInventory(x, 0x7FFFFFFF);
+			GiveInventory(x, GetDBEntry(SaveDataA, x));
+		}
+		LoadedData[PN] = true;
+		NotTriggerSaving[PN] = false;
+		Log(s:"Saved player_", d:PN, s:"'s data");
+		print(s:"Your data loaded");
+	}
+	else {
+		ACS_NamedExecuteAlways("Save_Failed", 0, 0, 0, 0);
+	}
+}
+
+void SaveVariable (int PN)
+{
+	foreach(let int i;let str x;SaveStats) {
+		i++;
+		if(x == "Health") {
+				StatsAmount[PN][i] = GetActorProperty(0, APROP_Health);
+		}
+		else if(x == "Armor") {
+			StatsArmorType[PN] = GetArmorInfo(ARMORINFO_CLASSNAME);
+			StatsArmorAmount[PN] = GetArmorType(GetArmorInfo(ARMORINFO_CLASSNAME), PN);
+		}
+		else {
+			StatsAmount[PN][i] = CheckInventory(x);
+		}
+	}
+	foreach(let int i;let str x;SaveItems) {
+		i++;
+		ItemsAmount[PN][i] = CheckInventory(x);
+	}
+	foreach(let int i;let str x;SaveAmmo) {
+		i++;
+		AmmoAmount[PN][i] = CheckInventory(x);
+	}
+	foreach(let int i;let str x;SaveWeapons) {
+		i++;
+		WeaponsAmount[PN][i] = CheckInventory(x);
+	}
+}
+
+
+void SaveDataDisconnect (int PN)
+{
+	str HasData = strparam(s:AccountName[PN], s:"_HasData");
+	str SaveDataS = strparam(s:AccountName[PN], s:"_Stats");
+	str SaveDataAT = strparam(s:AccountName[PN], s:"_Armor");
+	str SaveDataA = strparam(s:AccountName[PN], s:"_Ammo");
+	str SaveDataI = strparam(s:AccountName[PN], s:"_Items");
+	str SaveDataW = strparam(s:AccountName[PN], s:"_Weapons");
+	if(!NotTriggerSaving[PN]) {
+		if(GetDBEntry(HasData, "DoomCentor")) {
+			if(!LoadedData[PN])
+				goto Initialization;
+		}
+			BeginDBTransaction();
+				if(!GetDBEntry(HasData, "DoomCentor"))
+					SetDBEntry(HasData, "DoomCentor", 1);
+				
+				foreach(let int i;let str x;SaveStats) {
+					if(x == "Armor") {
+						SetDBEntryString(SaveDataAT, "Type", StatsArmorType[PN]);
+						SetDBEntry(SaveDataAT, "Amount", StatsArmorAmount[PN]);
+					}
+					else {
+						SetDBEntry(SaveDataS, x, StatsAmount[PN][i]);
+					}
+				}
+				foreach(let int i;let str x;SaveItems) {
+					i++;
+					SetDBEntry(SaveDataI, x, ItemsAmount[PN][i]);
+				}
+				foreach(let int i;let str x;SaveAmmo) {
+					i++;
+					SetDBEntry(SaveDataA, x, AmmoAmount[PN][i]);
+				}
+				foreach(let int i;let str x;SaveWeapons) {
+					i++;
+					SetDBEntry(SaveDataW, x, WeaponsAmount[PN][i]);
+				}
+			EndDBTransaction();
+			Log(s:"Saved player_", d:PN, s:"'s data");
+	}
+	
+	Initialization:
+	LoadedData[PN] = false;
+	StatsArmorAmount[PN] = 0;
+	StatsArmorType[PN] = "";
+	AccountName[PN] = "";
+	
+	foreach(let int i;let str x;StatsInit) {
+		i++;
+		StatsAmount[PN][i] = x;
+	}
+	foreach(let int i;let str x;ItemsInit) {
+		i++;
+		ItemsAmount[PN][i] = x;
+	}
+	foreach(let int i;let str x;AmmoInit) {
+		i++;
+		AmmoAmount[PN][i] = x;
+	}
+	foreach(let int i;let str x;WeaponsInit) {
+		i++;
+		WeaponsAmount[PN][i] = x;
+	}
+}
+
+void SaveDataUnloading (int PN)
+{
+	str HasData = strparam(s:AccountName[PN], s:"_HasData");
+	str SaveDataS = strparam(s:AccountName[PN], s:"_Stats");
+	str SaveDataAT = strparam(s:AccountName[PN], s:"_Armor");
+	str SaveDataA = strparam(s:AccountName[PN], s:"_Ammo");
+	str SaveDataI = strparam(s:AccountName[PN], s:"_Items");
+	str SaveDataW = strparam(s:AccountName[PN], s:"_Weapons");
+	
+	if(!GetDBEntry(HasData, "DoomCentor"))
+		SetDBEntry(HasData, "DoomCentor", 1);
+	
+	foreach(let str x;SaveStats) {
+		if(x == "Health") {
+			SetDBEntry(SaveDataS, x, GetActorProperty(0, APROP_Health));
+		}
+		else if(x == "Armor") {
+			SetDBEntryString(SaveDataAT, "Type", GetArmorInfo(ARMORINFO_CLASSNAME));
+			SetDBEntry(SaveDataAT, "Amount", GetArmorType(GetArmorInfo(ARMORINFO_CLASSNAME), PN));
+		}
+		else {
+			SetDBEntry(SaveDataS, x, CheckInventory(x));
+		}
+	}
+	foreach(let str x;SaveItems)
+		SetDBEntry(SaveDataI, x, CheckInventory(x));
+	foreach(let str x;SaveAmmo)
+		SetDBEntry(SaveDataA, x, CheckInventory(x));
+	foreach(let str x;SaveWeapons)
+		SetDBEntry(SaveDataW, x, CheckInventory(x));
+	
+	if(LoadedData[PN])
+		GiveInventory("LoadedData", 1);
+}
+
+Script "Save_Failed" Clientside //original 800*600
+{
+	int Width = GetCVar("vid_defwidth");
+	int Height = GetCVar("vid_defheight");
+	SetHudSize(Width, Height, 1);
+	Width /= 2;
+	fixed FixedWidth = Width;
+	FixedWidth *= 65536;
+	FixedWidth += 0.4;
+	fixed Divider = FixedDiv(600.0, 280.0);
+	fixed FixedHeight = FixedDiv((fixed)Height, Divider);
+	FixedHeight *= 65536;
+	Height = (int)FixedHeight;
+	FixedHeight = (fixed)Height;
+	SetFont("LargeFont");
+	Hudmessage(s:"";HUDMSG_PLAIN,2,CR_Red, 1.5, 0.8,1,1);
+	Print(s:"Notification\nIt failed to load because the data could not be found.\nBecome a spectator or reconnect once to create the data.");
+	Print(s:"");
+	Hudmessage(s:"Notification\nIt failed to load because the data could not be found.\nBecome a spectator or reconnect once to create the data.";HUDMSG_PLAIN,2,CR_Red, FixedWidth, FixedHeight,0,1);
+	Delay(175);
+	Hudmessage(s:"";HUDMSG_PLAIN,2,CR_Red, 1.5, 0.8,1,1);
+}

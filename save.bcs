@@ -1,0 +1,102 @@
+#library "save"
+#include "zcommon.h"
+#include "save.h"
+
+
+Script "Save_Enter" Enter
+{
+	int PN = PlayerNumber();
+	if(PlayerIsLoggedIn(PN)) {
+		AccountName[PN] = GetPlayerAccountName(PN);
+		if(CheckInventory("LoadedData") > 0)
+			LoadedData[PN] = true;
+		if(!LoadedData[PN]) {
+			if(PlayerIsLoggedIn(PN))
+				LoadData(PN);
+		}
+	}
+	else {
+		NotTriggerSaving[PN] = true;
+		ACS_NamedExecuteAlways("Save_Notification", 0, 0, 0, 0);
+	}
+	ACS_NamedExecuteAlways("Save_Variable", 0, 0, 0, 0);
+}
+
+Script "Save_Notification" Clientside //original 800*600
+{
+	int Width = GetCVar("vid_defwidth");
+	int Height = GetCVar("vid_defheight");
+	SetHudSize(Width, Height, 1);
+	Width /= 2;
+	fixed FixedWidth = Width;
+	FixedWidth *= 65536;
+	FixedWidth += 0.4;
+	fixed Divider = FixedDiv(600.0, 280.0);
+	fixed FixedHeight = FixedDiv((fixed)Height, Divider);
+	FixedHeight *= 65536;
+	Height = (int)FixedHeight;
+	FixedHeight = (fixed)Height;
+	SetFont("LargeFont");
+	Hudmessage(s:"";HUDMSG_PLAIN,2,CR_Red, 1.5, 0.8,1,1);
+	Print(s:"Notification\n\nYou are not yet logged in, but the data was found in the database.\nIf you want to save your data, please log in. \nIf you don't know how to do this, please google it.\n\nYou can load it manually by entering \nPukeName Save_Net \nin the console.");
+	Print(s:"");
+	Hudmessage(s:"Notification\n\nYou are not yet logged in, but the data was found in the database.\nIf you want to save your data, please log in. \nIf you don't know how to do this, please google it.\n\nYou can load it manually by entering \nPukeName Save_Net \nin the console.";HUDMSG_PLAIN,2,CR_Red, FixedWidth, FixedHeight,0,1);
+	Delay(350);
+	Hudmessage(s:"";HUDMSG_PLAIN,2,CR_Red, 1.5, 0.8,1,1);
+}
+
+
+Script "Save_Net" Net
+{
+	int PN = PlayerNumber();
+	if(!LoadedData[PN]) {
+		if(PlayerIsLoggedIn(PN))
+			LoadData(PN);
+	}
+}
+
+Script "Save_Variable"
+{
+	int PN = PlayerNumber();
+	while(PlayerInGame(PN)) {
+		SaveVariable(PN);
+		Delay(GetCVar("DC_SaveInterval"));
+	}
+}
+
+Script "Save_Disconnect" (int PN) Disconnect
+{
+	if(!NotTriggerSaving[PN])
+		ACS_NamedExecuteAlways("Save_Database", 0, PN, 0, 0);
+}
+
+Script "Save_Database" (int PN)
+{
+	SaveDataDisconnect(PN);
+}
+
+Script "Save_Unloading" Unloading
+{
+	BeginDBTransaction();
+		for(int i = 0;i < 64;i++) {
+			if(!PlayerIsLoggedIn(i) || !PlayerInGame(i))
+				continue;
+			str HasData = strparam(s:AccountName[i], s:"_HasData");
+			if(GetDBEntry(HasData, "DoomCentor")) {
+				if(!LoadedData[i] || NotTriggerSaving[i]) {
+					Log(s:"Skipped saving data for player_", d:i);
+					continue;
+				}
+			}
+			SetActivatorToPlayer(i);
+			SaveDataUnloading(i);
+			SetActivator(0, AAPTR_NULL);
+			Log(s:"Saved player_", d:i, s:"'s data");
+		}
+	EndDBTransaction();
+}
+
+Script "Wipe_Database" Net
+{
+	WipeData(PlayerNumber());
+}
