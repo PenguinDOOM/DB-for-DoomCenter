@@ -132,6 +132,7 @@ int GetArmorStringToInt (int PN)
 {
 	str SaveDataAT = strparam(s:AccountName[PN], s:"_Armor");
 	str ArmorType = GetDBEntryString(SaveDataAT, "Type");
+	
 	if(ArmorType == "ArmorBonus")
 		return 1;
 	else if(ArmorType == "GreenArmor")
@@ -164,15 +165,22 @@ void LoadData (int PN)
 	str SaveDataA = strparam(s:AccountName[PN], s:"_Ammo");
 	str SaveDataI = strparam(s:AccountName[PN], s:"_Items");
 	str SaveDataW = strparam(s:AccountName[PN], s:"_Weapons");
-	if(GetDBEntry(HasData, "DoomCentor")) {
-		foreach(let str x;SaveStats) {
-			if(x == "Health") {
+	
+	if(GetDBEntry(HasData, "DoomCentor"))
+	{
+		foreach(let str x;SaveStats)
+		{
+			if(x == "Health")
+			{
 				if(GetDBEntry(SaveDataS, x) > 0)
 					SetActorProperty(0, APROP_Health, GetDBEntry(SaveDataS, x));
 			}
-			else if(x == "Armor") {
+			else if(x == "Armor")
+			{
 				TakeInventory("Armor", 0x7FFFFFFF);
-				switch(GetArmorStringToInt(PN)) {
+				
+				switch(GetArmorStringToInt(PN))
+				{
 					case 1:
 						GiveInventory("ArmorBonus", GetDBEntry(SaveDataAT, "Amount"));
 						break;
@@ -190,57 +198,70 @@ void LoadData (int PN)
 						break;
 				}
 			}
-			else {
+			else
+			{
 				TakeInventory(x, 0x7FFFFFFF);
 				GiveInventory(x, GetDBEntry(SaveDataS, x));
 			}
 		}
-		foreach(let str x;SaveItems) {
+		foreach(let str x;SaveItems)
+		{
 			TakeInventory(x, 0x7FFFFFFF);
 			GiveInventory(x, GetDBEntry(SaveDataI, x));
 		}
-		foreach(let str x;SaveWeapons) {
+		foreach(let str x;SaveWeapons)
+		{
 			TakeInventory(x, 0x7FFFFFFF);
 			GiveInventory(x, GetDBEntry(SaveDataW, x));
 		}
-		foreach(let str x;SaveAmmo) {
+		foreach(let str x;SaveAmmo)
+		{
 			TakeInventory(x, 0x7FFFFFFF);
 			GiveInventory(x, GetDBEntry(SaveDataA, x));
 		}
+		
 		LoadedData[PN] = true;
 		NotTriggerSaving[PN] = false;
 		Log(s:"Saved player_", d:PN, s:"'s data");
 		print(s:"Your data loaded");
 	}
-	else {
+	else
+	{
 		ACS_NamedExecuteAlways("Save_Failed", 0, 0, 0, 0);
 	}
 }
 
 void SaveVariable (int PN)
 {
-	foreach(let int i;let str x;SaveStats) {
+	foreach(let int i;let str x;SaveStats)
+	{
 		i++;
-		if(x == "Health") {
+		if(x == "Health")
+		{
 				StatsAmount[PN][i] = GetActorProperty(0, APROP_Health);
 		}
-		else if(x == "Armor") {
+		else if(x == "Armor")
+		{
 			StatsArmorType[PN] = GetArmorInfo(ARMORINFO_CLASSNAME);
 			StatsArmorAmount[PN] = GetArmorType(GetArmorInfo(ARMORINFO_CLASSNAME), PN);
 		}
-		else {
+		else
+		{
 			StatsAmount[PN][i] = CheckInventory(x);
 		}
 	}
-	foreach(let int i;let str x;SaveItems) {
+	foreach(let int i;let str x;SaveItems)
+	{
 		i++;
 		ItemsAmount[PN][i] = CheckInventory(x);
 	}
-	foreach(let int i;let str x;SaveAmmo) {
+	foreach(let int i;let str x;SaveAmmo)
+	{
 		i++;
 		AmmoAmount[PN][i] = CheckInventory(x);
 	}
-	foreach(let int i;let str x;SaveWeapons) {
+	foreach(let int i;let str x;SaveWeapons)
+	{
 		i++;
 		WeaponsAmount[PN][i] = CheckInventory(x);
 	}
@@ -255,37 +276,50 @@ void SaveDataDisconnect (int PN)
 	str SaveDataA = strparam(s:AccountName[PN], s:"_Ammo");
 	str SaveDataI = strparam(s:AccountName[PN], s:"_Items");
 	str SaveDataW = strparam(s:AccountName[PN], s:"_Weapons");
-	if(!NotTriggerSaving[PN]) {
-		if(GetDBEntry(HasData, "DoomCentor")) {
+	
+	if(!NotTriggerSaving[PN])
+	{
+		if(GetDBEntry(HasData, "DoomCentor"))
+		{
 			if(!LoadedData[PN])
 				goto Initialization;
 		}
+		
 			BeginDBTransaction();
+			
 				if(!GetDBEntry(HasData, "DoomCentor"))
 					SetDBEntry(HasData, "DoomCentor", 1);
 				
-				foreach(let int i;let str x;SaveStats) {
-					if(x == "Armor") {
+				foreach(let int i;let str x;SaveStats)
+				{
+					if(x == "Armor")
+					{
 						SetDBEntryString(SaveDataAT, "Type", StatsArmorType[PN]);
 						SetDBEntry(SaveDataAT, "Amount", StatsArmorAmount[PN]);
 					}
-					else {
+					else
+					{
 						SetDBEntry(SaveDataS, x, StatsAmount[PN][i]);
 					}
 				}
-				foreach(let int i;let str x;SaveItems) {
+				foreach(let int i;let str x;SaveItems)
+				{
 					i++;
 					SetDBEntry(SaveDataI, x, ItemsAmount[PN][i]);
 				}
-				foreach(let int i;let str x;SaveAmmo) {
+				foreach(let int i;let str x;SaveAmmo)
+				{
 					i++;
 					SetDBEntry(SaveDataA, x, AmmoAmount[PN][i]);
 				}
-				foreach(let int i;let str x;SaveWeapons) {
+				foreach(let int i;let str x;SaveWeapons)
+				{
 					i++;
 					SetDBEntry(SaveDataW, x, WeaponsAmount[PN][i]);
 				}
+				
 			EndDBTransaction();
+			
 			Log(s:"Saved player_", d:PN, s:"'s data");
 	}
 	
@@ -295,19 +329,23 @@ void SaveDataDisconnect (int PN)
 	StatsArmorType[PN] = "";
 	AccountName[PN] = "";
 	
-	foreach(let int i;let str x;StatsInit) {
+	foreach(let int i;let str x;StatsInit)
+	{
 		i++;
 		StatsAmount[PN][i] = x;
 	}
-	foreach(let int i;let str x;ItemsInit) {
+	foreach(let int i;let str x;ItemsInit)
+	{
 		i++;
 		ItemsAmount[PN][i] = x;
 	}
-	foreach(let int i;let str x;AmmoInit) {
+	foreach(let int i;let str x;AmmoInit)
+	{
 		i++;
 		AmmoAmount[PN][i] = x;
 	}
-	foreach(let int i;let str x;WeaponsInit) {
+	foreach(let int i;let str x;WeaponsInit)
+	{
 		i++;
 		WeaponsAmount[PN][i] = x;
 	}
@@ -325,15 +363,19 @@ void SaveDataUnloading (int PN)
 	if(!GetDBEntry(HasData, "DoomCentor"))
 		SetDBEntry(HasData, "DoomCentor", 1);
 	
-	foreach(let str x;SaveStats) {
-		if(x == "Health") {
+	foreach(let str x;SaveStats)
+	{
+		if(x == "Health")
+		{
 			SetDBEntry(SaveDataS, x, GetActorProperty(0, APROP_Health));
 		}
-		else if(x == "Armor") {
+		else if(x == "Armor")
+		{
 			SetDBEntryString(SaveDataAT, "Type", GetArmorInfo(ARMORINFO_CLASSNAME));
 			SetDBEntry(SaveDataAT, "Amount", GetArmorType(GetArmorInfo(ARMORINFO_CLASSNAME), PN));
 		}
-		else {
+		else
+		{
 			SetDBEntry(SaveDataS, x, CheckInventory(x));
 		}
 	}
@@ -352,7 +394,9 @@ Script "Save_Failed" Clientside //original 800*600
 {
 	int Width = GetCVar("vid_defwidth");
 	int Height = GetCVar("vid_defheight");
+	
 	SetHudSize(Width, Height, 1);
+	
 	Width /= 2;
 	fixed FixedWidth = Width;
 	FixedWidth *= 65536;
@@ -362,6 +406,7 @@ Script "Save_Failed" Clientside //original 800*600
 	FixedHeight *= 65536;
 	Height = (int)FixedHeight;
 	FixedHeight = (fixed)Height;
+	
 	SetFont("LargeFont");
 	Hudmessage(s:"";HUDMSG_PLAIN,2,CR_Red, 1.5, 0.8,1,1);
 	Print(s:"Notification\nIt failed to load because the data could not be found.\nBecome a spectator or reconnect once to create the data.");
